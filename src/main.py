@@ -54,6 +54,28 @@ def test_permutation_cipher():
     print(f"{mapping2}")
     
     print(f"\nTexto Decifrado com o Algoritmo:\n{decrypted2}")
+    
+    
+    print("\n\n" + "="*60)
+    print("TESTE 3: Permutação de Bloco (Block Cipher)")
+    print("="*60)
+    
+    original_text3 = "THIS IS A TEST OF THE BLOCK PERMUTATION CIPHER WHICH IS DIFFERENT FROM COLUMNAR"
+    key3 = [3, 0, 4, 1, 2]
+    
+    ciphertext3 = PermutationCypher.encrypt_block(original_text3, key3)
+    
+    print(f"\nTexto Original:\n{original_text3}")
+    print(f"\nTexto Cifrado (Bloco):\n{ciphertext3}")
+    
+    print("\nAlgoritmo de Quebra:")
+    breaker3 = PermutationCypher(ciphertext3, max_key_length=10)
+    decrypted3, mapping3 = breaker3.break_cypher()
+    
+    print(f"Mapeamento de Índices:")
+    print(f"{mapping3}")
+    
+    print(f"\nTexto Decifrado:\n{decrypted3}")
 
 
 def test_substitution_cipher():
