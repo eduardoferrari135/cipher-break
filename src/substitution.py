@@ -1,4 +1,4 @@
-from cypher_breaker import CypherBreaker
+from cipher_breaker import CypherBreaker
 
 
 class SubstitutionCypher(CypherBreaker):
