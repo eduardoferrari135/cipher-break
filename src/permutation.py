@@ -106,7 +106,7 @@ class PermutationCypher(CypherBreaker):
         key_length: int,
         mode: str = "columnar",
         max_iterations: int = 2000,
-        num_restarts: int = 10,
+        num_restarts: int = 100,
     ) -> Tuple[List[int], float]:
         global_best_key = None
         global_best_score = float("-inf")

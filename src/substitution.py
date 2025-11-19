@@ -28,6 +28,17 @@ class SubstitutionCypher(CypherBreaker):
         # Inicializa o scorer (assume que a classe QuadgramScorer está disponível no escopo)
         self.scorer = QuadgramScorer(quadgram_path)
 
+    @staticmethod
+    def encrypt(text: str, key: List[int]) -> str:
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        key_list = list(alphabet)
+        random.shuffle(key_list)
+        target_key = "".join(key_list)
+
+        encrypt_table = str.maketrans(alphabet, target_key)
+        ciphertext = text.translate(encrypt_table)
+        return ciphertext
+
     def _decrypt(self, text: str, key_key: str) -> str:
         """
         Decifra o texto usando a chave de substituição fornecida.

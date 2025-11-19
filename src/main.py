@@ -1,12 +1,14 @@
+import permutation
 from substitution import SubstitutionCypher
 from permutation import PermutationCypher
+import substitution
 
 
 def test_permutation_cipher():
     """Testa o quebrador de cifra de permutação"""
     print("\n" + "_" * 60)
     print("TESTES PERMUTAÇÃO")
-    print("\n" + "_" * 60)
+    print("_" * 60)
 
     print("\n" + "=" * 60)
     print("TESTE 1: Transposição por Colunas")
@@ -84,7 +86,7 @@ def test_substitution_cipher():
 
     print("\n" + "_" * 60)
     print("TESTES SUBSTITUIÇÃO")
-    print("\n" + "_" * 60)
+    print("_" * 60)
 
     print("\n" + "=" * 60)
     print("TESTE 1: Cifra de Substituição (Hill Climbing)")
@@ -95,9 +97,6 @@ def test_substitution_cipher():
         "CRYPTOGRAPHY IS THE PRACTICE AND STUDY OF TECHNIQUES FOR SECURE COMMUNICATION "
         "IN THE PRESENCE OF ADVERSARIAL BEHAVIOR MORE GENERALLY CALLED THIRD PARTIES "
         "MODERN CRYPTOGRAPHY EXISTS AT THE INTERSECTION OF THE DISCIPLINES OF MATHEMATICS "
-        "COMPUTER SCIENCE AND ELECTRICAL ENGINEERING APPLICATIONS OF CRYPTOGRAPHY INCLUDE "
-        "ELECTRONIC COMMERCE CHIP BASED PAYMENT CARDS DIGITAL CURRENCIES COMPUTER PASSWORDS "
-        "AND MILITARY COMMUNICATIONS"
     )
 
     # Remove espaços para simular dificuldade real
@@ -132,5 +131,13 @@ def test_substitution_cipher():
 
 
 if __name__ == "__main__":
-    test_substitution_cipher()
-    test_permutation_cipher()
+    # test_substitution_cipher()
+    # test_permutation_cipher()
+    substitution_breaker = SubstitutionCypher(
+        "Cbobobtbsfzfmmpxdpmpsfeuspqjdbmgsvjutxjefmzdpotvnfebspvoeuifxpsmegpsuifjstxffugmbwpsboetpguufyuvsf,Uifzbsfcpsojombshfcvodiftpocbobobusfftboebsflopxoupcfbhsfbutpvsdfpgfofshzboeqpubttjvn:btxfmmbtfttfoujbmwjubnjotgpsuifcpez,Jobeejujpoupcfjohfbufosbxxifosjqf:uifzdbocfvtfejodblft:tnppuijftboewbsjpvtdvmjobszsfdjqft:cfjohbwfstbujmfboeovusjujpvtgppegpsqfpqmfpgbmmljoet"
+    )
+    print(substitution_breaker.break_cypher())
+    permutation_breaker = PermutationCypher(
+        "YRIPISEUTNRCHASCOHHCOUMCNEEFDIPASRCECNITEEIRRGYETFRMAIPNTPETPTAECOIOHSORT"
+    )
+    print(permutation_breaker.break_cypher())
