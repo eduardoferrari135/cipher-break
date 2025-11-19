@@ -133,9 +133,13 @@ def test_substitution_cipher():
 if __name__ == "__main__":
     # test_substitution_cipher()
     # test_permutation_cipher()
-    substitution_breaker = SubstitutionCypher(
-        "Cbobobtbsfzfmmpxdpmpsfeuspqjdbmgsvjutxjefmzdpotvnfebspvoeuifxpsmegpsuifjstxffugmbwpsboetpguufyuvsf,Uifzbsfcpsojombshfcvodiftpocbobobusfftboebsflopxoupcfbhsfbutpvsdfpgfofshzboeqpubttjvn:btxfmmbtfttfoujbmwjubnjotgpsuifcpez,Jobeejujpoupcfjohfbufosbxxifosjqf:uifzdbocfvtfejodblft:tnppuijftboewbsjpvtdvmjobszsfdjqft:cfjohbwfstbujmfboeovusjujpvtgppegpsqfpqmfpgbmmljoet"
+    text = SubstitutionCypher.encrypt(
+        "By contrast, gradient descent methods can move in any direction that the ridge or alley may ascend or descend. Hence, gradient descent or the conjugate gradient method is generally preferred over hill climbing when the target function is differentiable.",
+        "XRIJVLUTBKYHOMSWCAQGZPNEFD",
     )
+
+    substitution_breaker = SubstitutionCypher(text)
+
     print(substitution_breaker.break_cypher())
     permutation_breaker = PermutationCypher(
         "YRIPISEUTNRCHASCOHHCOUMCNEEFDIPASRCECNITEEIRRGYETFRMAIPNTPETPTAECOIOHSORT"

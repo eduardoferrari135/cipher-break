@@ -6,13 +6,14 @@ from cipher_breaker import CypherBreaker
 from quadgram_scorer import QuadgramScorer
 
 
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
 class SubstitutionCypher(CypherBreaker):
     """
     Quebrador de Cifras de Substituição Monoalfabética usando Hill Climbing.
     Espaço de busca: 26! (aprox 4e26 combinações).
     """
-
-    ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     def __init__(self, message: str):
         super().__init__(message)
@@ -29,13 +30,9 @@ class SubstitutionCypher(CypherBreaker):
         self.scorer = QuadgramScorer(quadgram_path)
 
     @staticmethod
-    def encrypt(text: str, key: List[int]) -> str:
-        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        key_list = list(alphabet)
-        random.shuffle(key_list)
-        target_key = "".join(key_list)
-
-        encrypt_table = str.maketrans(alphabet, target_key)
+    def encrypt(text: str, key) -> str:
+        text = text.upper()
+        encrypt_table = str.maketrans(ALPHABET, key)
         ciphertext = text.translate(encrypt_table)
         return ciphertext
 
@@ -48,12 +45,12 @@ class SubstitutionCypher(CypherBreaker):
         """
         # Cria tabela de tradução: Cipher Alphabet -> Plain Alphabet
         # O Hill Climbing gera a chave de decifração diretamente
-        table = str.maketrans(key_key, self.ALPHABET)
+        table = str.maketrans(key_key, ALPHABET)
         return text.translate(table)
 
     def _generate_random_key(self) -> List[str]:
         """Gera uma permutação aleatória do alfabeto"""
-        key = list(self.ALPHABET)
+        key = list(ALPHABET)
         random.shuffle(key)
         return key
 
@@ -119,7 +116,7 @@ class SubstitutionCypher(CypherBreaker):
 
         # Constrói o dicionário de mapeamento (Cipher -> Plain)
         mapping = {}
-        for cipher_char, plain_char in zip(best_key, self.ALPHABET):
+        for cipher_char, plain_char in zip(best_key, ALPHABET):
             mapping[cipher_char] = plain_char
 
         return final_plaintext, mapping
