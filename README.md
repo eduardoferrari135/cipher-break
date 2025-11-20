@@ -1,65 +1,55 @@
-# Quebra de Cifra de Permutação
+# Quebra de Cifras: Substituição e Permutação
 
-Este projeto implementa um algoritmo para quebrar cifras de permutação, sem conhecimento prévio da chave ou do método utilizado.
+Este projeto implementa algoritmos de criptoanálise para quebrar cifras clássicas de **Substituição Monoalfabética** e **Permutação Livre**, sem conhecimento prévio da chave.
 
-O processo é dividido em duas etapas principais:
-1. **Cifragem (para validação):** Geramos um texto cifrado a partir de um texto original (usando Transposição Colunar ou Permutação de Bloco).
-2. **Quebra (ataque):** O algoritmo descobre o método, o tamanho da chave e a chave em si, recuperando o texto original.
+O sistema utiliza técnicas de otimização estocástica (**Hill Climbing**) guiadas por estatística de linguagem (**Quadgrams**) para recuperar o texto original.
 
 ---
 
 ## 1. O Processo de Cifragem
 
-O sistema suporta dois tipos de embaralhamento:
+O projeto aborda duas categorias fundamentais de criptografia clássica:
 
-### A. Transposição Colunar
-O texto é escrito em linhas e lido por colunas embaralhadas.
-*   **Exemplo:** `HELLO` -> (grade) -> lê colunas -> `LHOEL`
+### A. Cifra de Substituição
+Cada letra do alfabeto original é mapeada para uma letra diferente. A estrutura das palavras muda, mas a frequência das letras é preservada (mas mascarada).
+* **Exemplo:** `HELLO` -> (A=X, B=Y...) -> `XUBBU`
 
-### B. Permutação de Bloco
-O texto é dividido em blocos pequenos (ex: 5 letras) e as letras são embaralhadas dentro de cada bloco, sempre com a mesma regra.
-*   **Exemplo:** `HELLO` -> (troca posições 1 e 2) -> `HLELO`
+### B. Cifra de Permutação (Livre)
+Os caracteres permanecem os mesmos, mas suas posições são alteradas seguindo uma regra geométrica ou matricial.
+* **Abrangência:** O algoritmo foi desenhado para cobrir *Transposição Colunar*, *Rail Fence*, *Rotações* e *Blocos*, tratando todas como uma matriz de colunas reordenadas.
+* **Exemplo:** `HELLO` -> (reordenar) -> `LHLEO`
 
 ---
 
 ## 2. O Processo de Quebra
 
-O ataque é baseado em **Hill Climbing** guiado por **Análise de Frequência de Quadgramas**. Ele é "universal" porque testa múltiplas hipóteses.
+O ataque ignora a força bruta (que seria impossível para $26!$ combinações na substituição) e utiliza um método iterativo inteligente.
 
-### Passo 1: Detecção de Configuração
-O algoritmo testa combinações de:
-*   **Tamanho da Chave:** de 2 até 20.
-*   **Modo:** Colunar vs. Bloco.
+### O Motor: Quadgram Scoring
+Para saber se uma tentativa de decriptação está correta, o algoritmo calcula um *score* baseado na probabilidade de sequências de 4 letras (Quadgrams) em inglês.
+* `THEY` tem pontuação alta.
+* `XQKZ` tem pontuação baixa.
 
-Para cada combinação, ele faz uma decifragem rápida e avalia se o texto resultante "parece" inglês (usando quadgramas). A melhor combinação vence.
+### Algoritmo 1: Quebra de Substituição
+1.  **Inicialização:** Começa com uma chave aleatória.
+2.  **Mutação:** Troca duas letras da chave de lugar.
+3.  **Avaliação:** Se o texto decifrado tem um *score* melhor, mantém a troca. Caso contrário, desfaz.
+4.  **Restarts:** Repete o processo várias vezes para evitar ficar preso em máximos locais.
 
-### Passo 2: Descobrir a Chave (Otimização)
-Com o tamanho e o modo definidos, o algoritmo refina a chave:
-1.  Começa com uma chave aleatória.
-2.  Troca duas posições da chave e vê se o texto melhora.
-3.  Se melhorar, mantém. Se não, desfaz.
-4.  Repete até encontrar a melhor chave possível.
-
-### Passo 3: Decifragem Final
-Aplica a melhor chave encontrada usando o modo detectado para revelar a mensagem original.
+### Algoritmo 2: Quebra de Permutação
+Como o tamanho da chave é desconhecido, o algoritmo adota uma estratégia dinâmica:
+1.  **Busca de Período:** Testa tamanhos de chave de 2 até um limite (ex: 15).
+2.  **Abordagem Matricial:** Para cada tamanho, trata o texto como uma grade de colunas.
+3.  **Otimização:** Usa Hill Climbing para encontrar a melhor ordem dessas colunas.
+    * Essa abordagem resolve geometricamente cifras como *Rail Fence* e *Leitura em Z*, pois elas geram padrões periódicos equivalentes a uma transposição de colunas.
 
 ---
 
 ## 3. Executando o Projeto
 
-Para ver o processo acontecendo, execute:
+Certifique-se de que o arquivo `english_quadgrams.txt` esteja na pasta `data/`.
+
+Para rodar a demonstração completa (que cifra e depois quebra automaticamente):
 
 ```bash
-python3 main.py
-```
-
-Isso rodará testes automatizados que:
-1.  Cifram textos usando Transposição Colunar e Permutação de Bloco.
-2.  O algoritmo analisa e quebra cada um automaticamente.
-3.  Exibe o texto recuperado e qual método foi detectado.
-
-### Estrutura dos Arquivos
-
-*   `src/permutation.py`: Implementação do algoritmo (Cifragem, Decifragem Universal, Hill Climbing).
-*   `src/main.py`: Script de teste com exemplos variados.
-*   `data/english_quadgrams.txt`: Banco de dados de frequências de quadgramas.
+python main.py

@@ -1,27 +1,33 @@
-from cipher_breaker import CypherBreaker
-import random
-import math
 import os
-from typing import List, Tuple, Dict
+import random
+from typing import List, Tuple, Union
+from cipher_breaker import CypherBreaker
 from quadgram_scorer import QuadgramScorer
 
 
 class PermutationCypher(CypherBreaker):
-    def __init__(self, message: str, max_key_length: int = 20) -> None:
+    def __init__(self, message: str, max_key_length: int = 15) -> None:
         super().__init__(message)
         self.max_key_length = max_key_length
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         quadgram_path = os.path.join(current_dir, "..", "data", "english_quadgrams.txt")
+        
+        if not os.path.exists(quadgram_path):
+            quadgram_path = os.path.join(current_dir, "english_quadgrams.txt")
+            
         self.scorer = QuadgramScorer(quadgram_path)
 
     @staticmethod
     def encrypt(text: str, key: List[int]) -> str:
+        """
+        Implementação da encriptação por transposição colunar.
+        """
         clean_text = "".join(c for c in text if c.isalpha()).upper()
         key_len = len(key)
-
+        
         rows = [clean_text[i : i + key_len] for i in range(0, len(clean_text), key_len)]
-
+        
         ciphertext = []
         for k in key:
             col_chars = []
@@ -29,34 +35,25 @@ class PermutationCypher(CypherBreaker):
                 if k < len(row):
                     col_chars.append(row[k])
             ciphertext.append("".join(col_chars))
-
+            
         return "".join(ciphertext)
 
-    @staticmethod
-    def encrypt_block(text: str, key: List[int]) -> str:
-        """Cifra usando Permutação de Bloco Simples"""
-        clean_text = "".join(c for c in text if c.isalpha()).upper()
-        key_len = len(key)
-        result = []
-
-        for i in range(0, len(clean_text), key_len):
-            chunk = clean_text[i : i + key_len]
-            if len(chunk) < key_len:
-                result.append(chunk)
-            else:
-                # A chave [2, 0, 1] significa: 1º char cifrado é o 2º original, etc.
-                scrambled_str = "".join([chunk[k] for k in key])
-                result.append(scrambled_str)
-
-        return "".join(result)
-
-    def _decrypt_columnar(self, ciphertext: str, key: List[int]) -> str:
-        msg_len = len(ciphertext)
+    def _generic_decrypt(self, data: Union[str, List[int]], key: List[int]) -> Union[str, List[int]]:
+        """
+        Decripta assumindo uma transposição genérica de colunas.
+        Funciona tanto para texto (str) quanto para lista de índices (List[int]).
+        """
+        is_string = isinstance(data, str)
+        sequence = list(data) if is_string else data
+        
+        msg_len = len(sequence)
         key_len = len(key)
 
+        # 1. Calcular dimensões da matriz
         num_rows = msg_len // key_len
         num_cols_extra = msg_len % key_len
 
+        # 2. Determinar o tamanho de cada coluna
         col_lengths = {}
         for col in range(key_len):
             if col < num_cols_extra:
@@ -64,136 +61,90 @@ class PermutationCypher(CypherBreaker):
             else:
                 col_lengths[col] = num_rows
 
-        decrypted_cols = [""] * key_len
+        # 3. Fatiar a sequência nas colunas baseadas na chave
+        cols_data = [None] * key_len
         current_idx = 0
-
-        for col_idx in key:
-            length = col_lengths[col_idx]
-            decrypted_cols[col_idx] = ciphertext[current_idx : current_idx + length]
+        
+        for k in key:
+            length = col_lengths[k]
+            cols_data[k] = sequence[current_idx : current_idx + length]
             current_idx += length
 
+        # 4. Reconstruir lendo linha por linha
         result = []
         for row in range(num_rows + 1):
             for col in range(key_len):
-                if row < len(decrypted_cols[col]):
-                    result.append(decrypted_cols[col][row])
+                if row < len(cols_data[col]):
+                    result.append(cols_data[col][row])
 
-        return "".join(result)
+        if is_string:
+            return "".join(result)
+        return result
 
-    def _decrypt_block(self, ciphertext: str, key: List[int]) -> str:
-        key_len = len(key)
-        msg_len = len(ciphertext)
-        result = [""] * msg_len
+    def _hill_climbing(self, ciphertext: str, key_len: int, max_iterations: int = 500) -> Tuple[List[int], float]:
+        """
+        Executa o algoritmo Hill Climbing para encontrar a melhor permutação
+        dado um tamanho de chave fixo.
+        """
+        # Estado inicial aleatório
+        current_key = list(range(key_len))
+        random.shuffle(current_key)
 
-        inverse_key = [0] * key_len
-        for i, k in enumerate(key):
-            inverse_key[k] = i
+        current_text = self._generic_decrypt(ciphertext, current_key)
+        current_score = self.scorer.score(current_text)
 
-        for i in range(0, msg_len, key_len):
-            chunk = ciphertext[i : i + key_len]
-            if len(chunk) < key_len:
-                for j, char in enumerate(chunk):
-                    result[i + j] = char
-            else:
-                for j, k in enumerate(inverse_key):
-                    result[i + j] = chunk[k]
+        # Otimização
+        for _ in range(max_iterations):
+            # Mutação: troca dois índices de lugar
+            neighbor_key = current_key.copy()
+            i, j = random.sample(range(key_len), 2)
+            neighbor_key[i], neighbor_key[j] = neighbor_key[j], neighbor_key[i]
 
-        return "".join(result)
+            decrypted_text = self._generic_decrypt(ciphertext, neighbor_key)
+            score = self.scorer.score(decrypted_text)
 
-    def _hill_climbing(
-        self,
-        ciphertext: str,
-        key_length: int,
-        mode: str = "columnar",
-        max_iterations: int = 2000,
-        num_restarts: int = 100,
-    ) -> Tuple[List[int], float]:
-        global_best_key = None
-        global_best_score = float("-inf")
+            if score > current_score:
+                current_score = score
+                current_key = neighbor_key
 
-        decrypt_func = (
-            self._decrypt_columnar if mode == "columnar" else self._decrypt_block
-        )
-
-        for restart in range(num_restarts):
-            current_key = list(range(key_length))
-            random.shuffle(current_key)
-
-            current_decrypted = decrypt_func(ciphertext, current_key)
-            current_score = self.scorer.score(current_decrypted)
-
-            improved = True
-            while improved:
-                improved = False
-                best_neighbor_key = None
-                best_neighbor_score = float("-inf")
-
-                for i in range(key_length):
-                    for j in range(i + 1, key_length):
-                        neighbor_key = current_key.copy()
-                        neighbor_key[i], neighbor_key[j] = (
-                            neighbor_key[j],
-                            neighbor_key[i],
-                        )
-
-                        text = decrypt_func(ciphertext, neighbor_key)
-                        score = self.scorer.score(text)
-
-                        if score > best_neighbor_score:
-                            best_neighbor_score = score
-                            best_neighbor_key = neighbor_key
-
-                if best_neighbor_score > current_score:
-                    current_key = best_neighbor_key
-                    current_score = best_neighbor_score
-                    improved = True
-
-            if current_score > global_best_score:
-                global_best_score = current_score
-                global_best_key = current_key
-
-        return global_best_key, global_best_score
-
-    def _find_key_length(self, ciphertext: str) -> Tuple[int, str]:
-        best_length = 2
-        best_score = float("-inf")
-        best_mode = "columnar"
-
-        for length in range(2, min(self.max_key_length + 1, len(ciphertext))):
-            _, score_col = self._hill_climbing(
-                ciphertext, length, mode="columnar", max_iterations=200, num_restarts=2
-            )
-
-            _, score_blk = self._hill_climbing(
-                ciphertext, length, mode="block", max_iterations=200, num_restarts=2
-            )
-
-            current_best = max(score_col, score_blk)
-            mode = "columnar" if score_col >= score_blk else "block"
-
-            if current_best > best_score:
-                best_score = current_best
-                best_length = length
-                best_mode = mode
-
-        return best_length, best_mode
+        return current_key, current_score
 
     def break_cypher(self) -> tuple[str, dict[str, str]]:
-        clean_text = "".join(c for c in self.message if c.isalpha())
+        """
+        Método principal: Tenta quebrar a cifra testando vários tamanhos de chave.
+        Retorna o texto decifrado e o mapa de índices.
+        """
+        clean_text = "".join(c for c in self.message if c.isalpha()).upper()
+        
+        best_global_score = float("-inf")
+        best_global_key = []
+        
+        # Limita o teste de chaves para não exceder o tamanho da mensagem
+        limit = min(self.max_key_length, len(clean_text) // 2)
 
-        key_length, mode = self._find_key_length(clean_text)
+        # 1. Busca pelo período (Key Length)
+        for length in range(2, limit + 1):
+            # Restarts: Roda o hill climbing algumas vezes para cada tamanho para evitar máximos locais.
+            restarts = 5 if length < 8 else 10
+            
+            for _ in range(restarts):
+                key, score = self._hill_climbing(clean_text, length)
+                
+                if score > best_global_score:
+                    best_global_score = score
+                    best_global_key = key
 
-        best_key, best_score = self._hill_climbing(
-            clean_text, key_length, mode=mode, max_iterations=5000, num_restarts=20
-        )
+        # 2. Decriptação final com a melhor chave encontrada
+        final_text = self._generic_decrypt(clean_text, best_global_key)
 
-        if mode == "columnar":
-            decrypted = self._decrypt_columnar(clean_text, best_key)
-        else:
-            decrypted = self._decrypt_block(clean_text, best_key)
-
+        # 3. Geração do Mapeamento de Índices
+        original_indices = list(range(len(clean_text)))
+        
+        permuted_indices = self._generic_decrypt(original_indices, best_global_key)
+        
+        # Mapeia: Onde estava no cifrado (chave) -> Onde ficou no decifrado (valor)
         index_mapping = {}
-        for i, k in enumerate(best_key):
-            index_mapping[str(i)] = str(k)
+        for new_pos, original_pos in enumerate(permuted_indices):
+            index_mapping[str(original_pos)] = str(new_pos)
 
-        return (decrypted, index_mapping)
+        return str(final_text), index_mapping
